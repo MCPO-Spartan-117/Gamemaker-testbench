@@ -1,0 +1,140 @@
+#macro ARRAYPICK false
+#macro STRUCTPICK false
+    #macro STRUCTPICK_CHOOSE true
+    #macro STRUCTPICK_SET false
+#macro ITERATE true
+    #macro ITERATIONS 500
+    #macro DATA_SIZE 100000
+    #macro ITERATE_DSMAP true
+    #macro ITERATE_STRUCT true
+    #macro ITERATE_ARRAY true
+    #macro ITERATE_STRUCT_FOREACH true
+
+if (ARRAYPICK) {
+    var temparray = array_create(100000, 0);
+
+    var temps = get_timer();
+    temparray[50000] = 20;
+    var tempe = get_timer();
+    var tt = tempe - temps;
+    show_debug_message($"ARRAYPICK {tt}");
+}
+
+if (STRUCTPICK) {
+    var tempstruct = {}
+    for (var i = 0; i < 100000; i++) {
+        struct_set(tempstruct, $"key{i}", 0);
+    }
+
+    var key;
+    if (STRUCTPICK_CHOOSE) {
+        key = choose("key50000", "key75000")
+    } else {
+        key = "key50000";
+    }
+
+    var temps = get_timer();
+    if (STRUCTPICK_SET) {
+        struct_set(tempstruct, key, 20);
+    } else {
+        tempstruct[$ key] = 20;
+    }
+    var tempe = get_timer();
+    var tt = tempe - temps;
+    show_debug_message($"STRUCTPICK {tt}");
+}
+
+if (ITERATE) {
+    var iterations = ITERATIONS; // Number of test runs
+    var data_size = DATA_SIZE; // Number of element
+
+    if (ITERATE_DSMAP) {
+        var test_map = ds_map_create();
+        for (var i = 0; i < data_size; i++) {
+            ds_map_add(test_map, "key" + string(i), { val : 0 });
+        }
+        var total_time = 0;
+
+        for (var k = 0; k < iterations; k++) {
+            var start_time = get_timer();
+            var key_list = ds_map_keys_to_array(test_map);
+            var key_count = array_length(key_list);
+
+            for (var i = 0; i < key_count; i++) {
+                var _temp = key_list[i]
+                test_map[? _temp].val = 5;
+            }
+
+            var end_time = get_timer();
+            total_time += (end_time - start_time);
+        }
+        var tt = total_time / iterations;
+        show_debug_message($"Average ds_map iteration time: {tt} ms");
+    }
+
+    if (ITERATE_STRUCT) {
+        var test_struct = {};
+        for (var i = 0; i < data_size; i++) {
+            struct_set(test_struct, "key" + string(i), { val : 0 });
+        }
+        var total_time = 0;
+
+        for (var k = 0; k < iterations; k++) {
+            var start_time = get_timer();
+            var member_names = struct_get_names(test_struct);
+            var member_count = array_length(member_names);
+
+            for (var i = 0; i < member_count; i++) {
+                var _temp = member_names[i];
+                var _temp_struct = test_struct[$ _temp];
+                _temp_struct.val = 5;
+            }
+
+            var end_time = get_timer();
+            total_time += (end_time - start_time);
+        }
+        var tt = total_time / iterations;
+        show_debug_message($"Average struct iteration time: {tt} ms");
+    }
+
+    if (ITERATE_ARRAY) {
+        var test_array = array_create(data_size, { val : 0 });
+        var total_time = 0;
+
+        for (var k = 0; k < iterations; k++) {
+            var start_time = get_timer();
+            var _array_length = array_length(test_array);
+
+            for (var i = 0; i < _array_length; i++) {
+                test_array[i].val = 5;
+            }
+
+            var end_time = get_timer();
+            total_time += (end_time - start_time);
+        }
+        var tt = total_time / iterations;
+        show_debug_message($"Average array iteration time: {tt} ms");
+    }
+
+    if (ITERATE_STRUCT_FOREACH) {
+        var test_struct = {};
+        for (var i = 0; i < data_size; i++) {
+            struct_set(test_struct, "key" + string(i), { val : 0 });
+        }
+        var total_time = 0;
+        function _foreach(_name, _val) {
+            _val.val = 5;
+        }
+
+        for (var k = 0; k < iterations; k++) {
+            var start_time = get_timer();
+
+            struct_foreach(test_struct, _foreach);
+
+            var end_time = get_timer();
+            total_time += (end_time - start_time);
+        }
+        var tt = total_time / iterations;
+        show_debug_message($"Average struct foreach iteration time: {tt} ms");
+    }
+}
