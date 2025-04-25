@@ -1,3 +1,5 @@
+#macro INITIALIZE true
+    #macro INIT_ARRAY_CREATE true
 #macro ARRAYPICK false
 #macro ARRAY_CONTAINS false
 #macro STRUCTPICK false
@@ -11,7 +13,7 @@
     #macro ITERATE_STRUCT true
     #macro ITERATE_ARRAY true
     #macro ITERATE_STRUCT_FOREACH true
-#macro CAST_STRUCT_TO_ARRAY true
+#macro CAST_STRUCT_TO_ARRAY false
     #macro STRUCT_FOREACH true
     #macro ARRAY_CREATE true
 #macro SPAMOUTPUT false
@@ -21,6 +23,44 @@
 var iterations = ITERATIONS; // Number of test runs
 var data_size = DATA_SIZE; // Number of element
 var data_size_offset = DATA_SIZE - 1;
+
+if (INITIALIZE) {
+    var temparray = [];
+    if (INIT_ARRAY_CREATE) {
+        var temps = get_timer();
+        temparray = array_create(data_size, 0);
+        var tempe = get_timer();
+        var tt_array_create = tempe - temps;
+        show_debug_message($"CREATE ARRAY {tt_array_create}")
+    }
+
+    var array_count;
+    if (INIT_ARRAY_CREATE) {
+        array_count = array_length(temparray);
+    } else {
+        array_count = data_size;
+    }
+    var temps = get_timer();
+    for (var i = 0; i < array_count; i++) {
+        if (INIT_ARRAY_CREATE) {
+            temparray[i] = $"key{i}";
+        } else {
+            array_push(temparray, $"key{i}");
+        }
+    }
+    var tempe = get_timer();
+    var tt_array_init = tempe - temps;
+    show_debug_message($"INITIALIZE ARRAY {tt_array_init}");
+
+    var tempstruct = {};
+    var temps = get_timer();
+    for (var i = 0; i < data_size; i++) {
+        struct_set(tempstruct, $"key{i}", 0);
+    }
+    var tempe = get_timer();
+    var tt_struct = tempe - temps;
+    show_debug_message($"INITIALIZE STRUCT {tt_struct}");
+}
 
 if (ARRAYPICK) {
     var temparray = array_create(data_size, 0);
