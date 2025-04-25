@@ -1,20 +1,28 @@
 #macro ARRAYPICK false
+#macro ARRAY_CONTAINS true
 #macro STRUCTPICK false
     #macro STRUCTPICK_CHOOSE true
     #macro STRUCTPICK_SET false
-#macro ITERATE true
-    #macro ITERATIONS 500
-    #macro DATA_SIZE 100000
+#macro STRUCT_CONTAINS true
+    #macro STRUCT_CONTAINS_CHOOSE false
+    #macro STRUCT_CONTAINS_HASH true
+#macro ITERATE false
     #macro ITERATE_DSMAP true
     #macro ITERATE_STRUCT true
     #macro ITERATE_ARRAY true
     #macro ITERATE_STRUCT_FOREACH true
+#macro ITERATIONS 500
+#macro DATA_SIZE 100000
+
+var iterations = ITERATIONS; // Number of test runs
+var data_size = DATA_SIZE; // Number of element
+var data_size_offset = DATA_SIZE - 1;
 
 if (ARRAYPICK) {
-    var temparray = array_create(100000, 0);
+    var temparray = array_create(data_size, 0);
 
     var temps = get_timer();
-    temparray[50000] = 20;
+    temparray[data_size_offset] = 20;
     var tempe = get_timer();
     var tt = tempe - temps;
     show_debug_message($"ARRAYPICK {tt}");
@@ -22,15 +30,15 @@ if (ARRAYPICK) {
 
 if (STRUCTPICK) {
     var tempstruct = {}
-    for (var i = 0; i < 100000; i++) {
+    for (var i = 0; i < data_size; i++) {
         struct_set(tempstruct, $"key{i}", 0);
     }
 
     var key;
     if (STRUCTPICK_CHOOSE) {
-        key = choose("key50000", "key75000")
+        key = choose($"key{data_size_offset}", $"key{data_size_offset - 1}")
     } else {
-        key = "key50000";
+        key = $"key{data_size_offset}";
     }
 
     var temps = get_timer();
@@ -45,9 +53,6 @@ if (STRUCTPICK) {
 }
 
 if (ITERATE) {
-    var iterations = ITERATIONS; // Number of test runs
-    var data_size = DATA_SIZE; // Number of element
-
     if (ITERATE_DSMAP) {
         var test_map = ds_map_create();
         for (var i = 0; i < data_size; i++) {
@@ -137,4 +142,100 @@ if (ITERATE) {
         var tt = total_time / iterations;
         show_debug_message($"Average struct foreach iteration time: {tt} ms");
     }
+}
+
+if (STRUCT_CONTAINS) {
+    var test_struct = {};
+    for (var i = 0; i < data_size; i++) {
+        struct_set(test_struct, "key" + string(i), { val : 0 });
+    }
+    var total_time = 0;
+
+    var key;
+    var key_null = "";
+    if (STRUCT_CONTAINS_CHOOSE) {
+        key = choose($"key{data_size_offset}", $"key{data_size_offset - 1}")
+    } else {
+        key = $"key{data_size_offset}";
+    }
+
+    var key_hash;
+    var key_null_hash;
+    if (STRUCT_CONTAINS_HASH) {
+        key_hash = variable_get_hash(key);
+        key_null_hash = variable_get_hash(key_null);
+    }
+
+    for (var k = 0; k < iterations; k++) {
+        var start_time = get_timer();
+        if (STRUCT_CONTAINS_HASH) {
+            struct_exists_from_hash(test_struct, key_hash);
+        } else {
+            struct_exists(test_struct, key);
+        }
+        var end_time = get_timer();
+        total_time += (end_time - start_time);
+    }
+    var tt = total_time / iterations;
+
+    for (var k = 0; k < iterations; k++) {
+        var start_time = get_timer();
+        if (STRUCT_CONTAINS_HASH) {
+            struct_exists_from_hash(test_struct, key_null_hash);
+        } else {
+            struct_exists(test_struct, key_null);
+        }
+        var end_time = get_timer();
+        total_time += (end_time - start_time);
+    }
+    var tt_null = total_time / iterations;
+    show_debug_message($"STRUCT_CONTAINS {tt}");
+    show_debug_message($"STRUCT_CONTAINS_NULL {tt_null}");
+}
+
+if (ARRAY_CONTAINS) {
+    var test_array = array_create(data_size, 0);
+    for (var i = 0; i < data_size; i++) {
+        test_array[i] = i;
+    }
+    var total_time = 0;
+    for (var k = 0; k < iterations; k++) {
+        var start_time = get_timer();
+        array_contains(test_array, 0);
+        var end_time = get_timer();
+        total_time += (end_time - start_time);
+    }
+    var tt_start = total_time / iterations;
+
+    total_time = 0;
+    for (var k = 0; k < iterations; k++) {
+        var start_time = get_timer();
+        array_contains(test_array, floor(data_size_offset / 2));
+        var end_time = get_timer();
+        total_time += (end_time - start_time);
+    }
+    var tt_mid = total_time / iterations;
+
+    total_time = 0;
+    for (var k = 0; k < iterations; k++) {
+        var start_time = get_timer();
+        array_contains(test_array, data_size_offset);
+        var end_time = get_timer();
+        total_time += (end_time - start_time);
+    }
+    var tt_end = total_time / iterations;
+
+    total_time = 0;
+    for (var k = 0; k < iterations; k++) {
+        var start_time = get_timer();
+        array_contains(test_array, undefined);
+        var end_time = get_timer();
+        total_time += (end_time - start_time);
+    }
+    var tt_null = total_time / iterations;
+
+    show_debug_message($"ARRAY_CONTAINS_START {tt_start}");
+    show_debug_message($"ARRAY_CONTAINS_MID {tt_mid}");
+    show_debug_message($"ARRAY_CONTAINS_END {tt_end}");
+    show_debug_message($"ARRAY_CONTAINS_NULL {tt_null}");
 }
