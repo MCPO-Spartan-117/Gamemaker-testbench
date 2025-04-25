@@ -178,6 +178,7 @@ if (STRUCT_CONTAINS) {
     }
     var tt = total_time / iterations;
 
+    total_time = 0;
     for (var k = 0; k < iterations; k++) {
         var start_time = get_timer();
         if (STRUCT_CONTAINS_HASH) {
