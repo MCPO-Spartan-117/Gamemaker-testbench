@@ -1,9 +1,9 @@
 #macro ARRAYPICK false
-#macro ARRAY_CONTAINS true
+#macro ARRAY_CONTAINS false
 #macro STRUCTPICK false
     #macro STRUCTPICK_CHOOSE true
     #macro STRUCTPICK_SET false
-#macro STRUCT_CONTAINS true
+#macro STRUCT_CONTAINS false
     #macro STRUCT_CONTAINS_CHOOSE false
     #macro STRUCT_CONTAINS_HASH true
 #macro ITERATE false
@@ -11,6 +11,10 @@
     #macro ITERATE_STRUCT true
     #macro ITERATE_ARRAY true
     #macro ITERATE_STRUCT_FOREACH true
+#macro CAST_STRUCT_TO_ARRAY true
+    #macro STRUCT_FOREACH true
+    #macro ARRAY_CREATE true
+#macro SPAMOUTPUT false
 #macro ITERATIONS 500
 #macro DATA_SIZE 100000
 
@@ -239,4 +243,62 @@ if (ARRAY_CONTAINS) {
     show_debug_message($"ARRAY_CONTAINS_MID {tt_mid}");
     show_debug_message($"ARRAY_CONTAINS_END {tt_end}");
     show_debug_message($"ARRAY_CONTAINS_NULL {tt_null}");
+}
+
+if (CAST_STRUCT_TO_ARRAY) {
+    var tempstruct = {};
+    if (ARRAY_CREATE) {
+        insarray = array_create(data_size, 0);
+    } else {
+        insarray = [];
+    }
+
+    for (var i = 0; i < data_size; i++) {
+        struct_set(tempstruct, $"key{i}", 100);
+    }
+
+    function cast_struct_to_array(_name, _val) {
+        if (ARRAY_CREATE) {
+            insarray[global.i] = _val;
+            global.i += 1;
+        } else {
+            array_push(insarray, _val);
+        }
+    }
+
+    var total_time = 0;
+    for (var k = 0; k < iterations; k++) {
+        var start_time = get_timer();
+        if (STRUCT_FOREACH) {
+            if (ARRAY_CREATE) {
+                global.i = 0;
+            }
+
+            struct_foreach(tempstruct, cast_struct_to_array);
+        } else {
+            var struct_names = struct_get_names(tempstruct);
+            var struct_count = array_length(struct_names);
+            for (var i = 0; i < struct_count; i++) {
+                if (ARRAY_CREATE) {
+                    insarray[i] = struct_get(tempstruct, struct_names[i]);
+                } else {
+                    var struct_val = struct_get(tempstruct, struct_names[i]);
+                    array_push(insarray, struct_val);
+                }
+            }
+        }
+        var end_time = get_timer();
+        var ct = end_time - start_time;
+        if (SPAMOUTPUT) {
+            show_debug_message($"CAST_STRUCT_TO_ARRAY {ct} ITER {k}");
+        }
+        total_time += ct;
+        if (ARRAY_CREATE) {
+            insarray = array_create(data_size, 0);
+        } else {
+            insarray = [];
+        }
+    }
+    var tt = total_time / iterations;
+    show_debug_message($"CAST_STRUCT_TO_ARRAY {tt} FIN");
 }
