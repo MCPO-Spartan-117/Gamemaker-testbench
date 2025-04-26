@@ -53,14 +53,14 @@ if (INITIALIZE) {
             }
 
             var array_count;
-            if (array_create) {
+            if (farray_create) {
                 array_count = array_length(insarray);
             } else {
                 array_count = data_size;
             }
 
             var funct;
-            if (array_create) {
+            if (farray_create) {
                 funct = function() {
                     insarray[i] = $"key{i}";
                 }
