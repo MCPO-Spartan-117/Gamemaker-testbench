@@ -9,7 +9,7 @@
 
     #macro STRUCTPICK true
     #macro STRUCTPICK_SET true
-        #macro STRUCTPICK_CHOOSE true
+        #macro STRUCTPICK_CHOOSE false
 
 #macro CONTAINS true
     #macro ARRAY_CONTAINS true
@@ -49,7 +49,7 @@ if (INITIALIZE) {
                 insarray = array_create(data_size, 0);
                 var tempe = get_timer();
                 var tt_array_create = tempe - temps;
-                show_debug_message($"CREATE ARRAY {tt_array_create}")
+                show_debug_message($"CREATE ARRAY_PREALLOC {tt_array_create}")
             }
 
             var array_count;
@@ -76,7 +76,15 @@ if (INITIALIZE) {
             }
             var tempe = get_timer();
             var tt_array_init = tempe - temps;
-            show_debug_message($"INITIALIZE ARRAY {tt_array_init}");
+
+            var str;
+            if (!farray_create) {
+                str = "_PUSH";
+            } else {
+                str = "_PREALLOC";
+            }
+            
+            show_debug_message($"INITIALIZE ARRAY{str} {tt_array_init}");
         }
     }
 
@@ -129,7 +137,15 @@ if (PICK) {
             }
             var tempe = get_timer();
             var tt = tempe - temps;
-            show_debug_message($"STRUCTPICK {tt}");
+
+            var str;
+            if (fset) {
+                str = "_SET";
+            } else {
+                str = "_ACCESSOR"
+            }
+
+            show_debug_message($"STRUCTPICK{str} {tt}");
         }
     }
 }
@@ -286,8 +302,16 @@ if (CONTAINS) {
                 total_time += (end_time - start_time);
             }
             var tt_null = total_time / iterations;
-            show_debug_message($"STRUCT_CONTAINS {tt}");
-            show_debug_message($"STRUCT_CONTAINS_NULL {tt_null}");
+
+            var str;
+            if (fhash) {
+                str = "_HASH";
+            } else {
+                str = "_STRING"
+            }
+
+            show_debug_message($"STRUCT_CONTAINS{str} {tt}");
+            show_debug_message($"STRUCT_CONTAINS_NULL{str} {tt_null}");
         }
     }
 
@@ -353,6 +377,13 @@ if (CAST_STRUCT_TO_ARRAY || CAST_STRUCT_FOREACH) {
             insarray = [];
         }
 
+        var str;
+        if (fforeach) {
+            str = "_FOREACH";
+        } else {
+            str = "_FORLOOP";
+        }
+
         for (i = 0; i < data_size; i++) {
             struct_set(tempstruct, $"key{i}", 100);
         }
@@ -392,7 +423,7 @@ if (CAST_STRUCT_TO_ARRAY || CAST_STRUCT_FOREACH) {
             var end_time = get_timer();
             var ct = end_time - start_time;
             if (SPAMOUTPUT) {
-                show_debug_message($"CAST_STRUCT_TO_ARRAY {ct} ITER {k}");
+                show_debug_message($"CAST_STRUCT_TO_ARRAY{str} {ct} ITER {k}");
             }
             total_time += ct;
             if (ARRAY_CREATE) {
@@ -402,7 +433,7 @@ if (CAST_STRUCT_TO_ARRAY || CAST_STRUCT_FOREACH) {
             }
         }
         tt = total_time / iterations;
-        show_debug_message($"CAST_STRUCT_TO_ARRAY {tt} FIN");
+        show_debug_message($"CAST_STRUCT_TO_ARRAY{str} {tt} FIN");
     }
 }
 
