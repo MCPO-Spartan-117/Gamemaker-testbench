@@ -1,4 +1,10 @@
 #macro INITIALIZE true
+	#macro INITIALIZE_DSMAP true
+	#macro INITIALIZE_DSMAP_SET true
+
+	#macro INITIALIZE_DSLIST true
+	#macro INITIALIZE_DSLIST_CREATE true
+
 	#macro INITIALIZE_ARRAY true
 	#macro INIT_ARRAY_CREATE true
 
@@ -12,6 +18,10 @@
 		#macro STRUCTPICK_CHOOSE false
 
 #macro CONTAINS true
+	#macro DSMAP_CONTAINS true
+
+	#macro DSLIST_CONTAINS true
+
 	#macro ARRAY_CONTAINS true
 
 	#macro STRUCT_CONTAINS true
@@ -21,14 +31,20 @@
 #macro ITERATE true
 	#macro ITERATE_DSMAP true
 
+	#macro ITERATE_DSLIST true
+
 	#macro ITERATE_STRUCT true
 	#macro ITERATE_STRUCT_FOREACH true
 
 	#macro ITERATE_ARRAY true
 
-#macro CAST_STRUCT_TO_ARRAY true
-#macro CAST_STRUCT_FOREACH true
-	#macro ARRAY_CREATE true
+#macro CAST true
+	#macro CAST_STRUCT_TO_ARRAY true
+	#macro CAST_STRUCT_FOREACH true
+		#macro ARRAY_CREATE true
+
+	#macro CAST_DSMAP_TO_ARRAY_NAMES true
+	#macro CAST_DSMAP_TO_ARRAY_VALS true
 
 #macro SPAMOUTPUT false
 #macro ITERATIONS 500
@@ -39,6 +55,76 @@ data_size = DATA_SIZE; // Number of element
 data_size_offset = DATA_SIZE - 1;
 
 if (INITIALIZE) {
+	if (INITIALIZE_DSMAP || INITIALIZE_DSMAP_SET) {
+		function initialize_dsmap(fset = false) constructor {
+			obj = other;
+			data_size = obj.data_size;
+			var tempmap = ds_map_create();
+
+			var funct;
+			if (fset) {
+				funct = method(self, ds_map_set);
+			} else {
+				funct = method(self, ds_map_add);
+			}
+
+			var temps = get_timer();
+			for (i = 0; i < data_size; i++) {
+				funct(tempmap, $"key{i}", 0);
+			}
+			var tempe = get_timer();
+			var tt = tempe - temps;
+	
+			var str;
+			if (fset) {
+				str = "_SET";
+			} else {
+				str = "_ADD"
+			}
+			
+			show_debug_message($"INITIALIZE DSMAP{str} {tt}")
+			ds_map_destroy(tempmap);
+		}
+	}
+
+	if (INITIALIZE_DSLIST || INITIALIZE_DSLIST_CREATE) {
+		function initialize_dslist(flist_create = false) constructor {
+			obj = other;
+			data_size = obj.data_size;
+			data_size_offset = obj.data_size_offset;
+			templist = ds_list_create();
+
+			var funct;
+			if (flist_create) {
+				ds_list_set(templist, data_size_offset, 0);
+				funct = function() {
+					ds_list_set(templist, i, $"key{i}");
+				}
+			} else {
+				funct = function() {
+					ds_list_add(templist, $"key{i}");
+				}
+			}
+
+			var temps = get_timer();
+			for (i = 0; i < data_size; i++) {
+				funct();
+			}
+			var tempe = get_timer();
+			var tt = tempe - temps;
+
+			var str;
+			if (flist_create) {
+				str = "_PREALLOC";
+			} else {
+				str = "_PUSH"
+			}
+
+			show_debug_message($"INITIALIZE DSLIST{str} {tt}")
+			ds_list_destroy(templist);
+		}
+	}
+	
 	if (INITIALIZE_ARRAY || INIT_ARRAY_CREATE) {
 		function initialize_array(farray_create = false) constructor {
 			obj = other;
@@ -174,7 +260,28 @@ if (ITERATE) {
 			}
 			var tt = total_time / iterations;
 			ds_map_destroy(test_map);
-			show_debug_message($"Average ds_map iteration time: {tt} ms");
+			show_debug_message($"Average ds_map iteration time: {tt} us");
+		}
+	}
+
+	if (ITERATE_DSLIST) {
+		function iterate_dslist() {
+			var templist = ds_list_create();
+			ds_list_set(templist, data_size_offset, 0);
+			for (var k = 0; k < data_size; k++) {
+				ds_list_set(templist, k, { val : 0 });
+			}
+
+			var temps = get_timer();
+			var _list_count = ds_list_size(templist);
+			for (var i = 0; i < _list_count; i++) {
+				templist[| i].val = 5
+			}
+			var tempe = get_timer();
+			var tt = tempe - temps;
+
+			show_debug_message($"Average ds_list iteration time: {tt} us")
+			ds_list_destroy(templist);
 		}
 	}
 
@@ -204,7 +311,7 @@ if (ITERATE) {
 					var end_time = get_timer();
 					total_time += (end_time - start_time);
 					var tt = total_time / iterations;
-					show_debug_message($"Average struct foreach iteration time: {tt} ms");
+					show_debug_message($"Average struct foreach iteration time: {tt} us");
 				}
 			} else {
 				for (var k = 0; k < iterations; k++) {
@@ -222,7 +329,7 @@ if (ITERATE) {
 					total_time += (end_time - start_time);
 				}
 				var tt = total_time / iterations;
-				show_debug_message($"Average struct iteration time: {tt} ms");
+				show_debug_message($"Average struct iteration time: {tt} us");
 			}
 		}
 	}
@@ -244,96 +351,34 @@ if (ITERATE) {
 				total_time += (end_time - start_time);
 			}
 			var tt = total_time / iterations;
-			show_debug_message($"Average array iteration time: {tt} ms");
+			show_debug_message($"Average array iteration time: {tt} us");
 		}
 	}
 }
 
 if (CONTAINS) {
-	if (STRUCT_CONTAINS || STRUCT_CONTAINS_HASH) {
-		function struct_contains(fhash = false) {
-			var test_struct = {};
+	if (DSMAP_CONTAINS) {
+		function dsmap_contains() {
+			var tempmap = ds_map_create();
 			for (var i = 0; i < data_size; i++) {
-				struct_set(test_struct, "key" + string(i), { val : 0 });
-			}
-			var total_time = 0;
-
-			var key;
-			var key_null = "";
-			if (STRUCT_CONTAINS_CHOOSE) {
-				key = choose($"key{data_size_offset}", $"key{data_size_offset - 1}")
-			} else {
-				key = $"key{data_size_offset}";
+				ds_map_add(tempmap, $"key{i}", 0);
 			}
 
-			var key_hash;
-			var key_null_hash;
-			if (fhash) {
-				key_hash = variable_get_hash(key);
-				key_null_hash = variable_get_hash(key_null);
-			}
-
-			var structfunct;
-			var keytemp;
-			var keytempnull;
-			if (fhash) {
-				structfunct = method(self, struct_exists_from_hash);
-				keytemp = key_hash;
-				keytempnull = key_null_hash;
-			} else {
-				structfunct = method(self, struct_exists);
-				keytemp = key;
-				keytempnull = key_null;
-			}
-
-			for (var k = 0; k < iterations; k++) {
-				var start_time = get_timer();
-				structfunct(test_struct, keytemp);
-				var end_time = get_timer();
-				total_time += (end_time - start_time);
-			}
-			var tt = total_time / iterations;
-
-			total_time = 0;
-			for (var k = 0; k < iterations; k++) {
-				var start_time = get_timer();
-				structfunct(test_struct, keytempnull);
-				var end_time = get_timer();
-				total_time += (end_time - start_time);
-			}
-			var tt_null = total_time / iterations;
-
-			var str;
-			if (fhash) {
-				str = "_HASH";
-			} else {
-				str = "_STRING"
-			}
-
-			show_debug_message($"STRUCT_CONTAINS{str} {tt}");
-			show_debug_message($"STRUCT_CONTAINS_NULL{str} {tt_null}");
-		}
-	}
-
-	if (ARRAY_CONTAINS) {
-		function obj_array_contains() {
-			var test_array = array_create(data_size, 0);
-			for (var i = 0; i < data_size; i++) {
-				test_array[i] = i;
-			}
+			var keytp = choose("0", "1");
 			var total_time = 0;
 			for (var k = 0; k < iterations; k++) {
 				var start_time = get_timer();
-				array_contains(test_array, 0);
+				ds_map_exists(tempmap, $"key{keytp}");
 				var end_time = get_timer();
 				total_time += (end_time - start_time);
 			}
 			var tt_start = total_time / iterations;
 
+			var midkey = floor(data_size_offset / 2);
 			total_time = 0;
 			for (var k = 0; k < iterations; k++) {
 				var start_time = get_timer();
-				array_contains(test_array, floor(data_size_offset / 2));
+				ds_map_exists(tempmap, $"key{midkey}");
 				var end_time = get_timer();
 				total_time += (end_time - start_time);
 			}
@@ -342,7 +387,7 @@ if (CONTAINS) {
 			total_time = 0;
 			for (var k = 0; k < iterations; k++) {
 				var start_time = get_timer();
-				array_contains(test_array, data_size_offset);
+				ds_map_exists(tempmap, $"key{data_size_offset}");
 				var end_time = get_timer();
 				total_time += (end_time - start_time);
 			}
@@ -351,94 +396,303 @@ if (CONTAINS) {
 			total_time = 0;
 			for (var k = 0; k < iterations; k++) {
 				var start_time = get_timer();
-				array_contains(test_array, undefined);
+				ds_map_exists(tempmap, undefined);
 				var end_time = get_timer();
 				total_time += (end_time - start_time);
 			}
 			var tt_null = total_time / iterations;
 
-			show_debug_message($"ARRAY_CONTAINS_START {tt_start}");
-			show_debug_message($"ARRAY_CONTAINS_MID {tt_mid}");
-			show_debug_message($"ARRAY_CONTAINS_END {tt_end}");
-			show_debug_message($"ARRAY_CONTAINS_NULL {tt_null}");
+			show_debug_message($"DSMAP_CONTAINS_START {tt_start}")
+			show_debug_message($"DSMAP_CONTAINS_MID {tt_mid}")
+			show_debug_message($"DSMAP_CONTAINS_END {tt_end}")
+			show_debug_message($"DSMAP_CONTAINS_NULL {tt_null}")
+			ds_map_destroy(tempmap);
 		}
 	}
-}
 
-if (CAST_STRUCT_TO_ARRAY || CAST_STRUCT_FOREACH) {
-	function cast_struct_to_array(fforeach = false) constructor {
-		obj = other;
-		var iterations = obj.iterations;
-		var data_size = obj.data_size;
-		var tempstruct = {};
-		if (ARRAY_CREATE) {
-			insarray = array_create(data_size, 0);
-		} else {
-			insarray = [];
+	if (DSLIST_CONTAINS) {
+		function dslist_contains() {
+			var templist = ds_list_create();
+			ds_list_set(templist, data_size_offset, 0);
+			for (var k = 0; k < data_size; k++) {
+				ds_list_set(templist, k, k);
+			}
+
+			var total_time = 0;
+			for (var k = 0; k < iterations; k++) {
+				var start_time = get_timer();
+				ds_list_find_index(templist, 0);
+				var end_time = get_timer();
+				total_time += (end_time - start_time);
+			}
+			var tt_start = total_time / iterations;
+
+			total_time = 0;
+			for (var k = 0; k < iterations; k++) {
+				var start_time = get_timer();
+				ds_list_find_index(templist, floor(data_size_offset / 2));
+				var end_time = get_timer();
+				total_time += (end_time - start_time);
+			}
+			var tt_mid = total_time / iterations;
+
+			total_time = 0;
+			for (var k = 0; k < iterations; k++) {
+				var start_time = get_timer();
+				ds_list_find_index(templist, data_size_offset);
+				var end_time = get_timer();
+				total_time += (end_time - start_time);
+			}
+			var tt_end = total_time / iterations;
+
+			total_time = 0;
+			for (var k = 0; k < iterations; k++) {
+				var start_time = get_timer();
+				ds_list_find_index(templist, undefined);
+				var end_time = get_timer();
+				total_time += (end_time - start_time);
+			}
+			var tt_null = total_time / iterations;
+
+			show_debug_message($"DSLIST_CONTAINS_START {tt_start}");
+			show_debug_message($"DSLIST_CONTAINS_MID {tt_mid}");
+			show_debug_message($"DSLIST_CONTAINS_END {tt_end}");
+			show_debug_message($"DSLIST_CONTAINS_NULL {tt_null}");
+			ds_list_destroy(templist);
 		}
+	}
 
-		var str;
-		if (fforeach) {
-			str = "_FOREACH";
-		} else {
-			str = "_FORLOOP";
-		}
+	if (STRUCT_CONTAINS || STRUCT_CONTAINS_HASH) {
+			function struct_contains(fhash = false) {
+				var test_struct = {};
+				for (var i = 0; i < data_size; i++) {
+					struct_set(test_struct, "key" + string(i), { val : 0 });
+				}
+				var total_time = 0;
 
-		for (i = 0; i < data_size; i++) {
-			struct_set(tempstruct, $"key{i}", 100);
-		}
-
-		if (CAST_STRUCT_FOREACH) {
-			static funct = function(_name, _val) {
-				if (ARRAY_CREATE) {
-					insarray[i] = _val;
-					i += 1;
+				var key;
+				var key_null = "";
+				if (STRUCT_CONTAINS_CHOOSE) {
+					key = choose($"key{data_size_offset}", $"key{data_size_offset - 1}")
 				} else {
-					array_push(insarray, _val);
+					key = $"key{data_size_offset}";
 				}
+
+				var key_hash;
+				var key_null_hash;
+				if (fhash) {
+					key_hash = variable_get_hash(key);
+					key_null_hash = variable_get_hash(key_null);
+				}
+
+				var structfunct;
+				var keytemp;
+				var keytempnull;
+				if (fhash) {
+					structfunct = method(self, struct_exists_from_hash);
+					keytemp = key_hash;
+					keytempnull = key_null_hash;
+				} else {
+					structfunct = method(self, struct_exists);
+					keytemp = key;
+					keytempnull = key_null;
+				}
+
+				for (var k = 0; k < iterations; k++) {
+					var start_time = get_timer();
+					structfunct(test_struct, keytemp);
+					var end_time = get_timer();
+					total_time += (end_time - start_time);
+				}
+				var tt = total_time / iterations;
+
+				total_time = 0;
+				for (var k = 0; k < iterations; k++) {
+					var start_time = get_timer();
+					structfunct(test_struct, keytempnull);
+					var end_time = get_timer();
+					total_time += (end_time - start_time);
+				}
+				var tt_null = total_time / iterations;
+
+				var str;
+				if (fhash) {
+					str = "_HASH";
+				} else {
+					str = "_STRING"
+				}
+
+				show_debug_message($"STRUCT_CONTAINS{str} {tt}");
+				show_debug_message($"STRUCT_CONTAINS_NULL{str} {tt_null}");
 			}
 		}
 
-		var total_time = 0;
-		for (k = 0; k < iterations; k++) {
-			var start_time = get_timer();
-			if (fforeach) {
-				if (ARRAY_CREATE) {
-					i = 0;
+		if (ARRAY_CONTAINS) {
+			function obj_array_contains() {
+				var test_array = array_create(data_size, 0);
+				for (var i = 0; i < data_size; i++) {
+					test_array[i] = i;
 				}
+				var total_time = 0;
+				for (var k = 0; k < iterations; k++) {
+					var start_time = get_timer();
+					array_contains(test_array, 0);
+					var end_time = get_timer();
+					total_time += (end_time - start_time);
+				}
+				var tt_start = total_time / iterations;
 
-				struct_foreach(tempstruct, funct);
-			} else {
-				var struct_names = struct_get_names(tempstruct);
-				var struct_count = array_length(struct_names);
-				for (i = 0; i < struct_count; i++) {
-					if (ARRAY_CREATE) {
-						insarray[i] = struct_get(tempstruct, struct_names[i]);
-					} else {
-						var struct_val = struct_get(tempstruct, struct_names[i]);
-						array_push(insarray, struct_val);
-					}
+				total_time = 0;
+				for (var k = 0; k < iterations; k++) {
+					var start_time = get_timer();
+					array_contains(test_array, floor(data_size_offset / 2));
+					var end_time = get_timer();
+					total_time += (end_time - start_time);
 				}
+				var tt_mid = total_time / iterations;
+
+				total_time = 0;
+				for (var k = 0; k < iterations; k++) {
+					var start_time = get_timer();
+					array_contains(test_array, data_size_offset);
+					var end_time = get_timer();
+					total_time += (end_time - start_time);
+				}
+				var tt_end = total_time / iterations;
+
+				total_time = 0;
+				for (var k = 0; k < iterations; k++) {
+					var start_time = get_timer();
+					array_contains(test_array, undefined);
+					var end_time = get_timer();
+					total_time += (end_time - start_time);
+				}
+				var tt_null = total_time / iterations;
+
+				show_debug_message($"ARRAY_CONTAINS_START {tt_start}");
+				show_debug_message($"ARRAY_CONTAINS_MID {tt_mid}");
+				show_debug_message($"ARRAY_CONTAINS_END {tt_end}");
+				show_debug_message($"ARRAY_CONTAINS_NULL {tt_null}");
 			}
-			var end_time = get_timer();
-			var ct = end_time - start_time;
-			if (SPAMOUTPUT) {
-				show_debug_message($"CAST_STRUCT_TO_ARRAY{str} {ct} ITER {k}");
+		}
+	}
+
+if (CAST) {
+	if (CAST_DSMAP_TO_ARRAY_NAMES || CAST_DSMAP_TO_ARRAY_VALS) {
+		function cast_dsmap_to_array(fkeys = true, fvals = false) {
+			var test_map = ds_map_create();
+			for (var i = 0; i < data_size; i++) {
+				ds_map_add(test_map, "key" + string(i), { val : 0 });
 			}
-			total_time += ct;
+
+			var total_time = 0;
+			if (fkeys) {
+				for (var k = 0; k < iterations; k++) {
+					var start_time = get_timer();
+					ds_map_keys_to_array(test_map);
+					var end_time = get_timer();
+					total_time += (end_time - start_time);
+				}
+				var tt = total_time / iterations;
+				show_debug_message($"CAST_DSMAP_TO_ARRAY_NAMES {tt}");
+			}
+
+			total_time = 0;
+			if (fvals) {
+				for (var k = 0; k < iterations; k++) {
+					var start_time = get_timer();
+					ds_map_keys_to_array(test_map);
+					var end_time = get_timer();
+					total_time += (end_time - start_time);
+				}
+				var tt = total_time / iterations;
+				show_debug_message($"CAST_DSMAP_TO_ARRAY_VALS {tt}");
+			}
+			ds_map_destroy(test_map);
+		}
+	}
+
+	if (CAST_STRUCT_TO_ARRAY || CAST_STRUCT_FOREACH) {
+		function cast_struct_to_array(fforeach = false) constructor {
+			obj = other;
+			var iterations = obj.iterations;
+			var data_size = obj.data_size;
+			var tempstruct = {};
 			if (ARRAY_CREATE) {
 				insarray = array_create(data_size, 0);
 			} else {
 				insarray = [];
 			}
+
+			var str;
+			if (fforeach) {
+				str = "_FOREACH";
+			} else {
+				str = "_FORLOOP";
+			}
+
+			for (i = 0; i < data_size; i++) {
+				struct_set(tempstruct, $"key{i}", 100);
+			}
+
+			if (CAST_STRUCT_FOREACH) {
+				static funct = function(_name, _val) {
+					if (ARRAY_CREATE) {
+						insarray[i] = _val;
+						i += 1;
+					} else {
+						array_push(insarray, _val);
+					}
+				}
+			}
+
+			var total_time = 0;
+			for (k = 0; k < iterations; k++) {
+				var start_time = get_timer();
+				if (fforeach) {
+					if (CAST_STRUCT_FOREACH) {
+						if (ARRAY_CREATE) {
+							i = 0;
+						}
+
+						struct_foreach(tempstruct, funct);
+					}
+				} else {
+					var struct_names = struct_get_names(tempstruct);
+					var struct_count = array_length(struct_names);
+					for (i = 0; i < struct_count; i++) {
+						if (ARRAY_CREATE) {
+							insarray[i] = struct_get(tempstruct, struct_names[i]);
+						} else {
+							var struct_val = struct_get(tempstruct, struct_names[i]);
+							array_push(insarray, struct_val);
+						}
+					}
+				}
+				var end_time = get_timer();
+				var ct = end_time - start_time;
+				if (SPAMOUTPUT) {
+					show_debug_message($"CAST_STRUCT_TO_ARRAY{str} {ct} ITER {k}");
+				}
+				total_time += ct;
+				if (ARRAY_CREATE) {
+					insarray = array_create(data_size, 0);
+				} else {
+					insarray = [];
+				}
+			}
+			tt = total_time / iterations;
+			show_debug_message($"CAST_STRUCT_TO_ARRAY{str} {tt} FIN");
 		}
-		tt = total_time / iterations;
-		show_debug_message($"CAST_STRUCT_TO_ARRAY{str} {tt} FIN");
 	}
 }
 
 
 if (INITIALIZE) {
+	if (INITIALIZE_DSMAP) { new initialize_dsmap(); }
+	if (INITIALIZE_DSMAP_SET) { new initialize_dsmap(true); }
+	if (INITIALIZE_DSLIST) { new initialize_dslist(); }
+	if (INITIALIZE_DSLIST_CREATE) { new initialize_dslist(true); }
 	if (INITIALIZE_ARRAY) { new initialize_array(); }
 	if (INIT_ARRAY_CREATE) { new initialize_array(true); }
 	if (INITIALIZE_STRUCT) { initialize_struct(); }
@@ -452,16 +706,23 @@ if (PICK) {
 
 if (ITERATE) {
 	if (ITERATE_DSMAP) { iterate_dsmap(); }
+	if (ITERATE_DSLIST) { iterate_dslist(); }
 	if (ITERATE_ARRAY) { iterate_array(); }
 	if (ITERATE_STRUCT) { new iterate_struct(); }
 	if (ITERATE_STRUCT_FOREACH) { new iterate_struct(true); }
 }
 
 if (CONTAINS) {
+	if (DSMAP_CONTAINS) { dsmap_contains(); }
+	if (DSLIST_CONTAINS) { dslist_contains(); }
 	if (ARRAY_CONTAINS) { obj_array_contains(); }
 	if (STRUCT_CONTAINS) { struct_contains(); }
 	if (STRUCT_CONTAINS_HASH) { struct_contains(true); }
 }
 
-if (CAST_STRUCT_TO_ARRAY) { new cast_struct_to_array(); }
-if (CAST_STRUCT_FOREACH) { new cast_struct_to_array(true); }
+if (CAST) {
+	if (CAST_DSMAP_TO_ARRAY_NAMES) { cast_dsmap_to_array(); }
+	if (CAST_DSMAP_TO_ARRAY_VALS) { cast_dsmap_to_array(false, true); }
+	if (CAST_STRUCT_TO_ARRAY) { new cast_struct_to_array(); }
+	if (CAST_STRUCT_FOREACH) { new cast_struct_to_array(true); }
+}
