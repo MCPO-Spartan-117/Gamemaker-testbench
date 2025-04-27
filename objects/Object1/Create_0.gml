@@ -273,14 +273,18 @@ if (ITERATE) {
 				ds_list_set(templist, k, { val : 0 });
 			}
 
-			var temps = get_timer();
-			var _list_count = ds_list_size(templist);
-			for (var i = 0; i < _list_count; i++) {
-				templist[| i].val = 5
+			var total_time = 0;
+			for (var k = 0; k < iterations; k++) {
+				var start_time = get_timer();
+				var _list_count = ds_list_size(templist);
+				for (var i = 0; i < _list_count; i++) {
+					templist[| i].val = 5
+				}
+				var end_time = get_timer();
+				total_time += (end_time - start_time);
 			}
-			var tempe = get_timer();
-			var tt = tempe - temps;
 
+			var tt = total_time / iterations;
 			show_debug_message($"Average ds_list iteration time: {tt} us")
 			ds_list_destroy(templist);
 		}
