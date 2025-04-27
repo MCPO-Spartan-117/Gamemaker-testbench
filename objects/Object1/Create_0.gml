@@ -37,6 +37,7 @@
 	#macro ITERATE_STRUCT_FOREACH true
 
 	#macro ITERATE_ARRAY true
+	#macro ITERATE_ARRAY_FOREACH true
 
 #macro CAST true
 	#macro CAST_STRUCT_TO_ARRAY true
@@ -334,24 +335,56 @@ if (ITERATE) {
 		}
 	}
 
-	if (ITERATE_ARRAY) {
-		function iterate_array() {
-			var test_array = array_create(data_size, { val : 0 });
-			var total_time = 0;
+	if (ITERATE_ARRAY || ITERATE_ARRAY_FOREACH) {
+		function iterate_array(fforeach = false) constructor {
+			obj = other;
+			var iterations = obj.iterations;
+			var data_size = obj.data_size;
+			test_array = array_create(data_size, 0);
+			var array_count = array_length(test_array);
+			for (var i = 0; i < array_count; i++) {
+				test_array[i] = { val : 0 };
+			}
 
+			if (ITERATE_ARRAY_FOREACH) {
+				function iterate_array_foreach(_val, _index) {
+					_val.val = 5;
+				}
+			}
+
+			var funct;
+			if (fforeach) {
+				funct = function() {
+					array_foreach(test_array, iterate_array_foreach);
+				}
+			} else {
+				funct = function() {
+					var _array_length = array_length(test_array);
+					for (var i = 0; i < _array_length; i++) {
+						test_array[i].val = 5;
+					}
+				}
+			}
+
+			var total_time = 0;
 			for (var k = 0; k < iterations; k++) {
 				var start_time = get_timer();
-				var _array_length = array_length(test_array);
 
-				for (var i = 0; i < _array_length; i++) {
-					test_array[i].val = 5;
-				}
+				funct();
 
 				var end_time = get_timer();
 				total_time += (end_time - start_time);
 			}
 			var tt = total_time / iterations;
-			show_debug_message($"Average array iteration time: {tt} us");
+
+			var str;
+			if (fforeach) {
+				str = "_foreach";
+			} else {
+				str = "";
+			}
+
+			show_debug_message($"Average array{str} iteration time: {tt} us");
 		}
 	}
 }
@@ -707,7 +740,8 @@ if (PICK) {
 if (ITERATE) {
 	if (ITERATE_DSMAP) { iterate_dsmap(); }
 	if (ITERATE_DSLIST) { iterate_dslist(); }
-	if (ITERATE_ARRAY) { iterate_array(); }
+	if (ITERATE_ARRAY) { new iterate_array(); }
+	if (ITERATE_ARRAY_FOREACH) { new iterate_array(true); }
 	if (ITERATE_STRUCT) { new iterate_struct(); }
 	if (ITERATE_STRUCT_FOREACH) { new iterate_struct(true); }
 }
