@@ -291,7 +291,7 @@ if (ITERATE) {
 			obj = other;
 			var iterations = obj.iterations;
 			var data_size = obj.data_size;
-			var test_struct = {};
+			test_struct = {};
 			for (var i = 0; i < data_size; i++) {
 				struct_set(test_struct, "key" + string(i), { val : 0 });
 			}
@@ -302,21 +302,13 @@ if (ITERATE) {
 				}
 			}
 
+			var funct;
 			if (fforeach) {
-				// Making if perform both normal and preprocessor tasks was a mistake
-				if (ITERATE_STRUCT_FOREACH) {
-					var start_time = get_timer();
-
+				funct = function() {
 					struct_foreach(test_struct, _foreach);
-
-					var end_time = get_timer();
-					total_time += (end_time - start_time);
-					var tt = total_time / iterations;
-					show_debug_message($"Average struct foreach iteration time: {tt} us");
 				}
 			} else {
-				for (var k = 0; k < iterations; k++) {
-					var start_time = get_timer();
+				funct = function() {
 					var member_names = struct_get_names(test_struct);
 					var member_count = array_length(member_names);
 
@@ -325,13 +317,27 @@ if (ITERATE) {
 						var _temp_struct = struct_get(test_struct, _temp);
 						_temp_struct.val = 5;
 					}
-
-					var end_time = get_timer();
-					total_time += (end_time - start_time);
 				}
-				var tt = total_time / iterations;
-				show_debug_message($"Average struct iteration time: {tt} us");
 			}
+
+			for (var k = 0; k < iterations; k++) {
+				var start_time = get_timer();
+
+				funct();
+
+				var end_time = get_timer();
+				total_time += (end_time - start_time);
+			}
+
+			var str;
+			if (fforeach) {
+				str = " foreach";
+			} else {
+				str = ""
+			}
+
+			var tt = total_time / iterations;
+			show_debug_message($"Average struct{str} iteration time: {tt} us");
 		}
 	}
 
