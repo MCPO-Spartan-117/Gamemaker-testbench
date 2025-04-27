@@ -246,7 +246,7 @@ if (ITERATE) {
 			}
 			var total_time = 0;
 
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				var key_list = ds_map_keys_to_array(test_map);
 				var key_count = array_length(key_list);
@@ -274,7 +274,7 @@ if (ITERATE) {
 			}
 
 			var total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				var _list_count = ds_list_size(templist);
 				for (var i = 0; i < _list_count; i++) {
@@ -324,7 +324,7 @@ if (ITERATE) {
 				}
 			}
 
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 
 				funct();
@@ -377,7 +377,7 @@ if (ITERATE) {
 			}
 
 			var total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 
 				funct();
@@ -409,7 +409,7 @@ if (CONTAINS) {
 
 			var keytp = choose("0", "1");
 			var total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				ds_map_exists(tempmap, $"key{keytp}");
 				var end_time = get_timer();
@@ -419,7 +419,7 @@ if (CONTAINS) {
 
 			var midkey = floor(data_size_offset / 2);
 			total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				ds_map_exists(tempmap, $"key{midkey}");
 				var end_time = get_timer();
@@ -428,7 +428,7 @@ if (CONTAINS) {
 			var tt_mid = total_time / iterations;
 
 			total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				ds_map_exists(tempmap, $"key{data_size_offset}");
 				var end_time = get_timer();
@@ -437,7 +437,7 @@ if (CONTAINS) {
 			var tt_end = total_time / iterations;
 
 			total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				ds_map_exists(tempmap, undefined);
 				var end_time = get_timer();
@@ -462,7 +462,7 @@ if (CONTAINS) {
 			}
 
 			var total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				ds_list_find_index(templist, 0);
 				var end_time = get_timer();
@@ -471,7 +471,7 @@ if (CONTAINS) {
 			var tt_start = total_time / iterations;
 
 			total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				ds_list_find_index(templist, floor(data_size_offset / 2));
 				var end_time = get_timer();
@@ -480,7 +480,7 @@ if (CONTAINS) {
 			var tt_mid = total_time / iterations;
 
 			total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				ds_list_find_index(templist, data_size_offset);
 				var end_time = get_timer();
@@ -489,7 +489,7 @@ if (CONTAINS) {
 			var tt_end = total_time / iterations;
 
 			total_time = 0;
-			for (var k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				ds_list_find_index(templist, undefined);
 				var end_time = get_timer();
@@ -541,7 +541,7 @@ if (CONTAINS) {
 					keytempnull = key_null;
 				}
 
-				for (var k = 0; k < iterations; k++) {
+				repeat(iterations) {
 					var start_time = get_timer();
 					structfunct(test_struct, keytemp);
 					var end_time = get_timer();
@@ -550,7 +550,7 @@ if (CONTAINS) {
 				var tt = total_time / iterations;
 
 				total_time = 0;
-				for (var k = 0; k < iterations; k++) {
+				repeat(iterations) {
 					var start_time = get_timer();
 					structfunct(test_struct, keytempnull);
 					var end_time = get_timer();
@@ -577,7 +577,7 @@ if (CONTAINS) {
 					test_array[i] = i;
 				}
 				var total_time = 0;
-				for (var k = 0; k < iterations; k++) {
+				repeat(iterations) {
 					var start_time = get_timer();
 					array_contains(test_array, 0);
 					var end_time = get_timer();
@@ -586,7 +586,7 @@ if (CONTAINS) {
 				var tt_start = total_time / iterations;
 
 				total_time = 0;
-				for (var k = 0; k < iterations; k++) {
+				repeat(iterations) {
 					var start_time = get_timer();
 					array_contains(test_array, floor(data_size_offset / 2));
 					var end_time = get_timer();
@@ -595,7 +595,7 @@ if (CONTAINS) {
 				var tt_mid = total_time / iterations;
 
 				total_time = 0;
-				for (var k = 0; k < iterations; k++) {
+				repeat(iterations) {
 					var start_time = get_timer();
 					array_contains(test_array, data_size_offset);
 					var end_time = get_timer();
@@ -604,7 +604,7 @@ if (CONTAINS) {
 				var tt_end = total_time / iterations;
 
 				total_time = 0;
-				for (var k = 0; k < iterations; k++) {
+				repeat(iterations) {
 					var start_time = get_timer();
 					array_contains(test_array, undefined);
 					var end_time = get_timer();
@@ -630,7 +630,7 @@ if (CAST) {
 
 			var total_time = 0;
 			if (fkeys) {
-				for (var k = 0; k < iterations; k++) {
+				repeat(iterations) {
 					var start_time = get_timer();
 					ds_map_keys_to_array(test_map);
 					var end_time = get_timer();
@@ -642,7 +642,7 @@ if (CAST) {
 
 			total_time = 0;
 			if (fvals) {
-				for (var k = 0; k < iterations; k++) {
+				repeat(iterations) {
 					var start_time = get_timer();
 					ds_map_keys_to_array(test_map);
 					var end_time = get_timer();
@@ -690,7 +690,7 @@ if (CAST) {
 			}
 
 			var total_time = 0;
-			for (k = 0; k < iterations; k++) {
+			repeat(iterations) {
 				var start_time = get_timer();
 				if (fforeach) {
 					if (CAST_STRUCT_FOREACH) {
