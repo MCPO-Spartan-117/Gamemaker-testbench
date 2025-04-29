@@ -39,6 +39,21 @@
 	#macro ITERATE_ARRAY true
 	#macro ITERATE_ARRAY_FOREACH true
 
+#macro REMOVE true
+	#macro REMOVE_DSMAP true
+	#macro REMOVE_DSMAP_ALL true
+
+	#macro REMOVE_DSLIST true
+	#macro REMOVE_DSLIST_ALL true
+
+	#macro REMOVE_STRUCT true
+	#macro REMOVE_STRUCT_ALL true
+	#macro REMOVE_STRUCT_ALL_FOREACH false
+
+	#macro REMOVE_ARRAY true
+	#macro REMOVE_ARRAY_ALL true
+	#macro REMOVE_ARRAY_ALL_FOREACH false
+
 #macro CAST true
 	#macro CAST_STRUCT_TO_ARRAY true
 	#macro CAST_STRUCT_FOREACH true
@@ -48,7 +63,7 @@
 	#macro CAST_DSMAP_TO_ARRAY_VALS true
 
 #macro SPAMOUTPUT false
-#macro ITERATIONS 500
+#macro ITERATIONS 10
 #macro DATA_SIZE 100000
 
 iterations = ITERATIONS; // Number of test runs
@@ -395,6 +410,305 @@ if (ITERATE) {
 			}
 
 			show_debug_message($"Average array{str} iteration time: {tt} us");
+		}
+	}
+}
+
+if (REMOVE) {
+	if (REMOVE_DSMAP || REMOVE_DSMAP_ALL) {
+		function dsmap_remove(fall = false) constructor {
+			obj = other;
+			var iterations = obj.iterations;
+			var data_size = obj.data_size;
+			
+			tempmap = ds_map_create();
+			for (var i = 0; i < data_size; i++) {
+				ds_map_add(tempmap, $"key{i}", 0);
+			}
+
+			tempmap2 = undefined;
+			var init_funct;
+			var funct;
+			if (fall) {
+				tempmap2 = ds_map_create();
+
+				init_funct = function() {
+					ds_map_copy(tempmap2, tempmap);
+				}
+
+				funct = function() {
+					var keys = ds_map_keys_to_array(tempmap2);
+					var key_count = array_length(keys);
+					for (var k = 0; k < key_count; k++) {
+						ds_map_delete(tempmap2, keys[k]);
+					}
+				}
+			} else {
+				tempmap2 = tempmap;
+
+				init_funct = function() {
+					ds_map_add(tempmap2, "key0", 0);
+				}
+
+				funct = function() {
+					ds_map_delete(tempmap2, "key0");
+				}
+			}
+
+			var start_time, end_time, total_time = 0;
+			repeat(iterations) {
+				init_funct();
+				start_time = get_timer();
+				funct();
+				end_time = get_timer();
+				total_time += (end_time - start_time);
+			}
+			var tt = total_time / iterations;
+
+			var str;
+			if (fall) {
+				str = "_ALL";
+			} else {
+				str = ""
+			}
+
+			show_debug_message($"REMOVE_DSMAP{str} {tt}")
+			ds_map_destroy(tempmap);
+			if (fall) {
+				ds_map_destroy(tempmap2);
+			}
+		}
+	}
+
+	if (REMOVE_DSLIST || REMOVE_DSLIST_ALL) {
+		function dslist_remove(fall = false) constructor {
+			obj = other;
+			var iterations = obj.iterations;
+			var data_size = obj.data_size;
+
+			templist = ds_list_create();
+			for (var i = 0; i < data_size; i++) {
+				ds_list_add(templist, $"key{i}");
+			}
+
+			templist2 = undefined;
+			var init_funct;
+			var funct;
+			var end_funct;
+			if (fall) {
+				templist2 = ds_list_create();
+
+				init_funct = function() {
+					ds_list_copy(templist2, templist);
+				}
+
+				end_funct = function() {}
+
+				funct = function() {
+					var key_count = ds_list_size(templist2);
+					repeat(key_count) {
+						ds_list_delete(templist2, 0);
+					}
+				}
+			} else {
+				templist2 = templist;
+
+				init_funct = function() {}
+
+				end_funct = function() {
+					ds_list_add(templist2, "key0");
+				}
+
+				funct = function() {
+					ds_list_delete(templist2, 0);
+				}
+			}
+
+			var start_time, end_time, total_time = 0;
+			repeat(iterations) {
+				init_funct();
+				start_time = get_timer();
+				funct();
+				end_time = get_timer();
+				total_time += (end_time - start_time);
+				end_funct();
+			}
+			var tt = total_time / iterations;
+
+			var str;
+			if (fall) {
+				str = "_ALL";
+			} else {
+				str = ""
+			}
+
+			show_debug_message($"REMOVE_DSLIST{str} {tt}")
+			ds_list_destroy(templist);
+			if (fall) {
+				ds_list_destroy(templist2);
+			}
+		}
+	}
+
+	if (REMOVE_STRUCT || REMOVE_STRUCT_ALL || REMOVE_STRUCT_ALL_FOREACH) {
+		function struct_remove_funct(fall = false, fforeach = false) constructor {
+			obj = other;
+			var iterations = obj.iterations;
+			var data_size = obj.data_size;
+			test_struct = {};
+			for (var i = 0; i < data_size; i++) {
+				struct_set(test_struct, "key" + string(i), { val : 0 });
+			}
+
+			if (REMOVE_STRUCT_ALL_FOREACH) {
+				function remove_struct_foreach(_name, _val) {
+					struct_remove(test_struct2, _name);
+				}
+			}
+
+			var init_funct;
+			var funct;
+			var end_funct;
+			if (!fall) {
+				funct = function() {
+					struct_remove(test_struct2, struct_names[0]);
+				}
+			} else if (fforeach) {
+				funct = function() {
+					struct_foreach(test_struct2, remove_struct_foreach);
+				}
+			} else {
+				funct = function() {
+					var struct_names = struct_get_names(test_struct2);
+					var struct_count = array_length(struct_names);
+					for (var i = 0; i < struct_count; i++) {
+						struct_remove(test_struct2, struct_names[i]);
+					}
+				}
+			}
+
+			var start_time;
+			var end_time;
+			if (fall) {
+				init_funct = function() {
+					test_struct2 = variable_clone(test_struct);
+				}
+
+				end_funct = function() {
+					delete test_struct2;
+				}
+
+				test_struct2 = {};
+			} else {
+				init_funct = function() {
+					struct_names = struct_get_names(test_struct2);
+				}
+
+				end_funct = function() {
+					struct_set(test_struct2, struct_names[0], { val : 0 });
+				}
+
+				test_struct2 = test_struct;
+			}
+			var total_time = 0;
+			repeat(iterations) {
+				init_funct();
+				start_time = get_timer();
+				funct();
+				end_time = get_timer();
+				total_time += (end_time - start_time);
+				end_funct();
+			}
+
+			var tt = total_time / iterations;
+
+			var str;
+			if (fforeach) {
+				str = "_ALL_FOREACH"
+			} else if (fall) {
+				str = "_ALL"
+			} else {
+				str = ""
+			}
+
+			show_debug_message($"STRUCT_REMOVE{str} {tt}");
+		}
+	}
+
+	if (REMOVE_ARRAY || REMOVE_ARRAY_ALL || REMOVE_ARRAY_ALL_FOREACH) {
+		function array_remove_funct(fall = false, fforeach = false) constructor {
+			obj = other;
+			var iterations = obj.iterations;
+			if (fall && iterations > 5) {
+				iterations = 5;
+			}
+			var data_size = obj.data_size;
+			data_size_temp = floor(data_size / 2);
+			test_array = array_create(data_size, 0);
+			var array_count = array_length(test_array);
+			for (var i = 0; i < array_count; i++) {
+				test_array[i] = { val : 0 };
+			}
+
+			if (REMOVE_ARRAY_ALL_FOREACH) {
+				function remove_array_foreach(_val, _index) {
+					array_delete(test_array2, 0, 1);
+				}
+			}
+
+			var funct;
+			if (!fall) {
+				funct = function() {
+					array_delete(test_array2, data_size_temp, 1);
+				}
+			} else if (fforeach) {
+				funct = function() {
+					array_foreach(test_array2, remove_array_foreach);
+				}
+			} else {
+				funct = function() {
+					var _array_length = array_length(test_array);
+					for (var i = 0; i < _array_length; i++) {
+						array_delete(test_array2, 0, 1);
+					}
+				}
+			}
+
+			var init_funct;
+			if (fall) {
+				init_funct = function() {
+					test_array2 = variable_clone(test_array);
+				}
+				test_array2 = [];
+			} else {
+				init_funct = function() {
+					array_push(test_array2, { val : 0 });
+				}
+				test_array2 = test_array;
+			}
+
+			var total_time = 0;
+			repeat(iterations) {
+				init_funct();
+				var start_time = get_timer();
+
+				funct();
+
+				var end_time = get_timer();
+				total_time += (end_time - start_time);
+			}
+			var tt = total_time / iterations;
+
+			var str;
+			if (fforeach) {
+				str = "_ALL_FOREACH";
+			} else if (fall) {
+				str = "_ALL"
+			} else {
+				str = "";
+			}
+
+			show_debug_message($"ARRAY_REMOVE{str} {tt}");
 		}
 	}
 }
@@ -754,6 +1068,19 @@ if (ITERATE) {
 	if (ITERATE_ARRAY_FOREACH) { new iterate_array(true); }
 	if (ITERATE_STRUCT) { new iterate_struct(); }
 	if (ITERATE_STRUCT_FOREACH) { new iterate_struct(true); }
+}
+
+if (REMOVE) {
+	if (REMOVE_DSLIST) { new dslist_remove(); }
+	if (REMOVE_DSLIST_ALL) { new dslist_remove(true); }
+	if (REMOVE_DSMAP) { new dsmap_remove(); }
+	if (REMOVE_DSMAP_ALL) { new dsmap_remove(true); }
+	if (REMOVE_STRUCT) { new struct_remove_funct(); }
+	if (REMOVE_STRUCT_ALL) { new struct_remove_funct(true); }
+	if (REMOVE_STRUCT_ALL_FOREACH) { new struct_remove_funct(true, true); }
+	if (REMOVE_ARRAY) { new array_remove_funct(); }
+	if (REMOVE_ARRAY_ALL) { new array_remove_funct(true); }
+	if (REMOVE_ARRAY_ALL_FOREACH) { new array_remove_funct(true, true); }
 }
 
 if (CONTAINS) {
