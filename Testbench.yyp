@@ -2,7 +2,7 @@
   "$GMProject":"v1",
   "%Name":"Testbench",
   "AudioGroups":[
-    {"$GMAudioGroup":"","%Name":"audiogroup_default","name":"audiogroup_default","resourceType":"GMAudioGroup","resourceVersion":"2.0","targets":-1,},
+    {"$GMAudioGroup":"v1","%Name":"audiogroup_default","exportDir":"","name":"audiogroup_default","resourceType":"GMAudioGroup","resourceVersion":"2.0","targets":-1,},
   ],
   "configs":{
     "children":[],
@@ -31,12 +31,13 @@
   "isEcma":false,
   "LibraryEmitters":[],
   "MetaData":{
-    "IDEVersion":"2024.1300.0.785",
+    "IDEVersion":"2024.1400.0.795",
   },
   "name":"Testbench",
   "resources":[
     {"id":{"name":"Object1","path":"objects/Object1/Object1.yy",},},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
+    {"id":{"name":"Benchmarks","path":"scripts/Benchmarks/Benchmarks.yy",},},
   ],
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
