@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"Benchmarks",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"Benchmarks",
+  "parent":{
+    "name":"Testbench",
+    "path":"Testbench.yyp",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
